@@ -3,6 +3,28 @@ import requests
 from dateutil.parser import parse
 import xml.etree.ElementTree as ET
 
+def teamNews(teamNewsFeedLink):
+    ''' =====================================================================================
+        Returns a list of all the title of all items in the feed. Starts an HTTP session and 
+        collects the raw text of the XML feed at the url.  Converts the rawtexts into an 
+        element tree then makes a list of all the data from within the title tag of each item.
+    
+        feed: string representation of URL for RSS feed.
+        
+        Futurn Modifications: This function with soon return the date of the items 
+        posted on the feed with the title.
+        
+        MODIFED FROM: runItems(root)
+    ''' 
+    api_url = teamNewsFeedLink
+
+    session = requests.Session()
+    session.mount('http://', requests.adapters.HTTPAdapter(max_retries=3))
+    raw_data = session.get(api_url)
+    xml_data = raw_data.text
+    root = ET.fromstring(xml_data)
+    return getFeedSummary(root)
+
 def runItems(feed):
     ''' =====================================================================================
         Returns a list of all the title of all items in the feed. Starts an HTTP session and 
@@ -50,6 +72,30 @@ def getTitle(item):
     for child in item:
         if child.tag == 'title':
             return child.text
+        
+def getLink(item):
+    ''' =====================================================================================
+        Takes in a item tree element from the document tree of an RSS feed and returns the 
+        link to the article for the item
+        
+        item: Item Element Tree Node    
+    
+    '''
+    for child in item:
+        if child.tag == 'link':
+            return child.text
+        
+def getDate(item):
+    ''' =====================================================================================
+        Takes in a item tree element from the document tree of an RSS feed and returns the 
+        date and time the item was posted
+        
+        item: Item Element Tree Node    
+    
+    '''
+    for child in item:
+        if child.tag == 'pubDate':
+            return child.text
 
 def getItems(root):
     ''' =====================================================================================
@@ -67,6 +113,97 @@ def getItems(root):
             itemRecords.append(getTitle(child))
         else:
             itemRecords.extend(getItems(child))
+    return itemRecords
+
+def getItemTitles(root):
+    ''' =====================================================================================
+        Returns a list of item element tree nodes under the root node of a element tree for
+        an RSS feed.
+               
+        root: is the element tree of a XML document representing an RSS feed of
+        "item" tags
+    
+        MODIFIED FROM: getItems(root)
+    '''
+    itemRecords = []
+    for child in root:
+        if child.tag == 'item':
+            itemRecords.append(getTitle(child))
+        else:
+            itemRecords.extend(getItemTitles(child))
+    return itemRecords
+
+def getItemLinks(root):
+    ''' =====================================================================================
+        Returns a list of item element tree nodes under the root node of a element tree for
+        an RSS feed.
+        
+        root: is the element tree of a XML document representing an RSS feed of
+        "item" tags
+    
+        MODIFIED FROM: getItems(root)
+    '''
+    itemRecords = []
+    for child in root:
+        if child.tag == 'item':
+            itemRecords.append(getLink(child))
+        else:
+            itemRecords.extend(getItemLinks(child))
+    return itemRecords
+
+def getItemDates(root):
+    ''' =====================================================================================
+        Returns a list of item element tree nodes under the root node of a element tree for
+        an RSS feed.
+        
+        root: is the element tree of a XML document representing an RSS feed of
+        "item" tags
+    
+        MODIFIED FROM: getItems(root)
+    '''
+    itemRecords = []
+    for child in root:
+        if child.tag == 'item':
+            itemRecords.append(getDate(child))
+        else:
+            itemRecords.extend(getItemDates(child))
+    return itemRecords
+
+def getTitleLinks(root):
+    ''' =====================================================================================
+        Returns the title and link for each item in the RSS feed element tree as a list of 
+        tupled pairs.
+        
+        root: is the element tree of a XML document representing an RSS feed of
+        "item" tags
+    
+        MODIFIED FROM: getItems(root)
+    '''
+    itemRecords = []
+    for child in root:
+        if child.tag == 'item':
+            itemRecords.append((getTitle(child), getLink(child)))
+        else:
+            itemRecords.extend(getTitleLinks(child))
+    return itemRecords
+
+def getFeedSummary(root):
+    ''' =====================================================================================
+        Returns the a list of tuples that sumarize the items of a RSS feed element tree. Each
+        tuple is for a single item and comprises 0: the title of the item, 1: the time the 
+        item was published and 2: the link to the article for the item.
+        
+        root: is the element tree of a XML document representing an RSS feed of
+        "item" tags
+    
+        MODIFIED FROM: getItems(root)
+    '''
+    itemRecords = []
+    for child in root:
+        if child.tag == 'item':
+            itemRecords.append((getTitle(child), getDate(child), getLink(child)))
+        else:
+            itemRecords.extend(getFeedSummary(child))
     return itemRecords
 
 def findContent(articlePage, elmTag):
