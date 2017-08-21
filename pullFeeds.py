@@ -4,7 +4,9 @@ import itemQuery as iq
 import articleParse as ap
 from timeit import default_timer as timer
 import subprocess
-#import modelInit as mi
+import modelGS as mgs
+#import httplib2
+#from apiclient import discovery
 
 #%run modelInit.py
 
@@ -14,10 +16,10 @@ def getFeeds():
     https://docs.google.com/spreadsheets/d/1DUBb9OG1A1Xs6v2PK9Oislz4384DSu2MzEbH8dK0ad4/edit#gid=0
     """
     credentials = get_credentials()
-    http = credentials.authorize(httplib2.Http())
+    http = credentials.authorize(mgs.httplib2.Http())
     discoveryUrl = ('https://sheets.googleapis.com/$discovery/rest?'
                     'version=v4')
-    service = discovery.build('sheets', 'v4', http=http,
+    service = mgs.discovery.build('sheets', 'v4', http=http,
                               discoveryServiceUrl=discoveryUrl)
 
     #specify sheetID and range
@@ -41,10 +43,10 @@ def writeLinkData(dataColumns):
     https://docs.google.com/spreadsheets/d/1XiOZWw3S__3l20Fo0LzpMmnro9NYDulJtMko09KsZJQ/edit#gid=0
     """
     credentials = get_credentials()
-    http = credentials.authorize(httplib2.Http())
+    http = credentials.authorize(mgs.httplib2.Http())
     discoveryUrl = ('https://sheets.googleapis.com/$discovery/rest?'
                     'version=v4')
-    service = discovery.build('sheets', 'v4', http=http,
+    service = mgs.discovery.build('sheets', 'v4', http=http,
                               discoveryServiceUrl=discoveryUrl)
 
     spreadsheet_id = '1XiOZWw3S__3l20Fo0LzpMmnro9NYDulJtMko09KsZJQ'
@@ -77,7 +79,7 @@ def feedFrame(feedRow):
             } for record in iq.recordsFromFeed(feedRow[3])]
 
 
-subprocess.call(" python modelInit.py", shell=True)
+get_credentials = mgs.modelInit()
 
 # Step 1 Load Feed Information
 feeds = getFeeds()
