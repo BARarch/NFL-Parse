@@ -5,6 +5,9 @@ import articleParse as ap
 from timeit import default_timer as timer
 import subprocess
 import modelGS as mgs
+import psycopg2
+import config as config
+
 #import httplib2
 #from apiclient import discovery
 
@@ -63,7 +66,10 @@ def writeLinkData(dataColumns):
     return result
 
 def sheetColumns(record):
-    return [record['pubDate'], record['team'], record['title'], record['type'], record['link'], record['discription'], record['creator']]
+    if record['new']:
+        return [record['pubDate'], record['team'], record['title'], record['type'], record['link'], record['discription'], record['creator'], 'new']
+    else:
+        return [record['pubDate'], record['team'], record['title'], record['type'], record['link'], record['discription'], record['creator']]
 
 def getTime(date):
     return datetime.strptime(date[:25], '%a, %d %b %Y %H:%M:%S')
@@ -77,6 +83,38 @@ def feedFrame(feedRow):
              'discription':record[3], 
              'creator':record[4]
             } for record in iq.recordsFromFeed(feedRow[3])]
+
+def sqlString(stg):
+    return stg.replace("'", "''")
+
+def pushRecord(feeds):
+    '''Push all article records into Postgres'''
+    conn = config.connect()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT id from nfl_team_articles order by id desc limit 1");
+    lastId = cursor.fetchall()[0][0]
+    
+    pushedElms = 0
+    feed = 0
+    for elm in reversed(feeds):
+        #print("feed: " + str(feed) )
+        cursor.execute("SELECT * FROM nfl_team_articles WHERE title = '%s'" % (sqlString(elm['title'])))
+        elm['new'] = not cursor.fetchall()
+        feed += 1
+
+        if elm['new']:
+            pushedElms += 1
+            lastId += 1
+            cursor.execute(
+                "INSERT INTO nfl_team_articles (Date, Team, Title, Type, Link, Discription, Creator, id) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);",
+                (elm['pubDate'], elm['team'], elm['title'], elm['type'], elm['link'], elm['discription'], elm['creator'], lastId))
+    
+    print(str(pushedElms) + " new records intserted into nfl-team-articles")
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return lastId
 
 
 get_credentials = mgs.modelInit()
@@ -92,8 +130,9 @@ for feedRow in feeds:
     data.extend(feedFrame(feedRow))
     print('team: '+ feedRow[1] + ' ' + feedRow[0] )
 
-# Step 3 Sort the Data by pubData and DataFrame the result    
+# Step 3 Sort the Data by pubData push to Postgress and DataFrame the result    
 dataSorts = sorted(data, key=lambda k: getTime(k['pubDate']), reverse=True)
+last = pushRecord(dataSorts)
 df = pd.DataFrame(dataSorts)
 
 # Final Step Write the Result to the NFL Feeds Speadsheet.
