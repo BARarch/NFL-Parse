@@ -88,7 +88,9 @@ def sqlString(stg):
     return stg.replace("'", "''")
 
 def pushRecord(feeds):
-    '''Push all article records into Postgres'''
+    '''
+        Push all article records into Postgres
+    '''
     conn = config.connect()
     cursor = conn.cursor()
     
