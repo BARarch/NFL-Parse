@@ -69,7 +69,7 @@ def sheetColumns(record):
     if record['new']:
         return [record['pubDate'], record['team'], record['title'], record['type'], record['link'], record['discription'], record['creator'], 'new']
     else:
-        return [record['pubDate'], record['team'], record['title'], record['type'], record['link'], record['discription'], record['creator']]
+        return [record['pubDate'], record['team'], record['title'], record['type'], record['link'], record['discription'], record['creator'], '']
 
 def getTime(date):
     return datetime.strptime(date[:25], '%a, %d %b %Y %H:%M:%S')
