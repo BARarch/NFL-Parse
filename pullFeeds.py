@@ -93,7 +93,7 @@ def feedFrame(feedRow, cursor):
             noNew += 1
         elms += 1
         
-    print('team: '+ feedRow[1] + ' ' + feedRow[0] + '  ' + str(noNew) + '/' + str(elms))        
+    print('team: '+ feedRow[1] + ' ' + feedRow[0] + '    ' + '\t' + str(noNew) + '/' + str(elms))        
     return teamFeed
 
 def sqlString(stg):
