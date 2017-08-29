@@ -74,25 +74,36 @@ def sheetColumns(record):
 def getTime(date):
     return datetime.strptime(date[:25], '%a, %d %b %Y %H:%M:%S')
 
-def feedFrame(feedRow):
-    return [{'pubDate':record[0], 
-             'team':feedRow[1], 
-             'title':record[1], 
-             'type':feedRow[2], 
-             'link':record[2], 
-             'discription':record[3], 
-             'creator':record[4]
-            } for record in iq.recordsFromFeed(feedRow[3])]
+def feedFrame(feedRow, cursor):
+    noNew = 0
+    elms = 0
+    teamFeed =  [{'pubDate':record[0], 
+                  'team':feedRow[1], 
+                  'title':record[1], 
+                  'type':feedRow[2], 
+                  'link':record[2], 
+                  'discription':record[3], 
+                  'creator':record[4]
+                 } for record in iq.recordsFromFeed(feedRow[3])]
+    for elm in teamFeed:
+        # Check for element in the Database, if not there set 'new' flag
+        cursor.execute("SELECT * FROM nfl_team_articles WHERE title = '%s'" % (sqlString(elm['title'])))
+        elm['new'] = not cursor.fetchall()
+        if elm['new']:
+            noNew += 1
+        elms += 1
+        
+    print('team: '+ feedRow[1] + ' ' + feedRow[0] + '  ' + str(noNew) + '/' + str(elms))        
+    return teamFeed
 
 def sqlString(stg):
     return stg.replace("'", "''")
 
-def pushRecord(feeds):
+def pushRecord(feeds, cursor, conn):
     '''
         Push all article records into Postgres
     '''
-    conn = config.connect()
-    cursor = conn.cursor()
+
     
     cursor.execute("SELECT id from nfl_team_articles order by id desc limit 1");
     lastId = cursor.fetchall()[0][0]
@@ -101,8 +112,8 @@ def pushRecord(feeds):
     feed = 0
     for elm in reversed(feeds):
         #print("feed: " + str(feed) )
-        cursor.execute("SELECT * FROM nfl_team_articles WHERE title = '%s'" % (sqlString(elm['title'])))
-        elm['new'] = not cursor.fetchall()
+        #cursor.execute("SELECT * FROM nfl_team_articles WHERE title = '%s'" % (sqlString(elm['title'])))
+        #elm['new'] = not cursor.fetchall()
         feed += 1
 
         if elm['new']:
@@ -112,14 +123,15 @@ def pushRecord(feeds):
                 "INSERT INTO nfl_team_articles (Date, Team, Title, Type, Link, Discription, Creator, id) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);",
                 (elm['pubDate'], elm['team'], elm['title'], elm['type'], elm['link'], elm['discription'], elm['creator'], lastId))
     
-    print(str(pushedElms) + " new records intserted into nfl-team-articles")
     conn.commit()
-    cursor.close()
-    conn.close()
+    print(str(pushedElms) + " new records intserted into nfl-team-articles")
+    
     return lastId
 
 
 get_credentials = mgs.modelInit()
+conn = config.connect()
+cursor = conn.cursor()
 
 # Step 1 Load Feed Information
 feeds = getFeeds()
@@ -129,12 +141,16 @@ data = []
 for feedRow in feeds:
     if feedRow[3] == 'null':
         continue
-    data.extend(feedFrame(feedRow))
-    print('team: '+ feedRow[1] + ' ' + feedRow[0] )
+    data.extend(feedFrame(feedRow, cursor))
+    #print('team: '+ feedRow[1] + ' ' + feedRow[0] )
 
 # Step 3 Sort the Data by pubData push to Postgress and DataFrame the result    
 dataSorts = sorted(data, key=lambda k: getTime(k['pubDate']), reverse=True)
-last = pushRecord(dataSorts)
+last = pushRecord(dataSorts, cursor, conn)
+
+cursor.close()
+conn.close()
+
 df = pd.DataFrame(dataSorts)
 
 # Final Step Write the Result to the NFL Feeds Speadsheet.
