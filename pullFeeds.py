@@ -7,7 +7,7 @@ import subprocess
 import modelGS as mgs
 import psycopg2
 import config as config
-from urllib.error import HTTPError as HttpError
+from googleapiclient.errors import HttpError
 
 #import httplib2
 #from apiclient import discovery
@@ -71,8 +71,25 @@ def sheetColumns(record):
         return [record['pubDate'], record['team'], record['title'], record['type'], record['link'], record['discription'], record['creator'], 'new']
     else:
         return [record['pubDate'], record['team'], record['title'], record['type'], record['link'], record['discription'], record['creator'], '']
-
+    
 def sheetColumns2ndAttempt(record):
+    maxDiscriptionSize = 3000
+    try:
+        if len(record['discription']) > maxDiscriptionSize:
+            discription = ''
+            #print("Discrption on " + record['pubDate'])
+            #print("from the " + record['team'] + " was too large")
+        else:
+            discription = record['discription']
+    except TypeError:
+        discription = record['discription']
+        
+    if record['new']:
+        return [record['pubDate'], record['team'], record['title'], record['type'], record['link'], discription, record['creator'], 'new']
+    else:
+        return [record['pubDate'], record['team'], record['title'], record['type'], record['link'], discription, record['creator'], '']
+
+def sheetColumnsNoDiscription(record):
     if record['new']:
         return [record['pubDate'], record['team'], record['title'], record['type'], record['link'], '', record['creator'], 'new']
     else:
@@ -164,8 +181,9 @@ df = pd.DataFrame(dataSorts)
 # Final Step Write the Result to the NFL Feeds Speadsheet.
 try:
     writeLinkData([sheetColumns(record) for record in dataSorts])
-except:
+except HttpError:
+    print("Large Discriptions")
     writeLinkData([sheetColumns2ndAttempt(record) for record in dataSorts])
-    print('I guess there was a big discription in one the cells, upload completed without them though')
+    print('There were large discriptions in some of the cells which did cause some problems, upload completed with them removed from the table write')
 finally:
-    print('complete')
+    print('Complete')
