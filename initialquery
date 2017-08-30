@@ -1,0 +1,11 @@
+SELECT id, link, date
+FROM nfl_team_articles
+WHERE type = 'News' OR
+	  type = 'All News' OR
+      type = 'news' OR
+      type = 'TeamNews' OR
+      type = 'Latest Content' OR
+      type = 'News Stories' OR
+      type = 'Team Stories' OR
+      type = 'Latest Headlines' OR
+      type = 'Articles';
