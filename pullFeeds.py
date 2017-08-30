@@ -7,6 +7,7 @@ import subprocess
 import modelGS as mgs
 import psycopg2
 import config as config
+from urllib.error import HTTPError as HttpError
 
 #import httplib2
 #from apiclient import discovery
@@ -71,6 +72,13 @@ def sheetColumns(record):
     else:
         return [record['pubDate'], record['team'], record['title'], record['type'], record['link'], record['discription'], record['creator'], '']
 
+def sheetColumns2ndAttempt(record):
+    if record['new']:
+        return [record['pubDate'], record['team'], record['title'], record['type'], record['link'], '', record['creator'], 'new']
+    else:
+        return [record['pubDate'], record['team'], record['title'], record['type'], record['link'], '', record['creator'], '']
+    
+    
 def getTime(date):
     return datetime.strptime(date[:25], '%a, %d %b %Y %H:%M:%S')
 
@@ -154,5 +162,10 @@ conn.close()
 df = pd.DataFrame(dataSorts)
 
 # Final Step Write the Result to the NFL Feeds Speadsheet.
-writeLinkData([sheetColumns(record) for record in dataSorts])
-
+try:
+    writeLinkData([sheetColumns(record) for record in dataSorts])
+except:
+    writeLinkData([sheetColumns2ndAttempt(record) for record in dataSorts])
+    print('I guess there was a big discription in one the cells, upload completed without them though')
+finally:
+    print('complete')
