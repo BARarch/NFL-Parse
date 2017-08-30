@@ -8,6 +8,7 @@ import modelGS as mgs
 import psycopg2
 import config as config
 from googleapiclient.errors import HttpError
+import corpus as cp
 
 #import httplib2
 #from apiclient import discovery
@@ -121,6 +122,28 @@ def feedFrame(feedRow, cursor):
     print('team: '+ feedRow[1] + ' ' + feedRow[0] + '    ' + '\t' + str(noNew) + '/' + str(elms))        
     return teamFeed
 
+def feedFrame2(feedRow, cursor):
+    noNew = 0
+    elms = 0
+    teamFeed =  [{'pubDate':record[0], 
+                  'team':feedRow[1], 
+                  'title':record[1], 
+                  'type':feedRow[2], 
+                  'link':record[2], 
+                  'discription':record[3], 
+                  'creator':record[4]
+                 } for record in iq.recordsFromFeed(feedRow[3])]
+    for elm in teamFeed:
+        # Check for element in the Database, if not there set 'new' flag
+        cursor.execute("SELECT * FROM team_articles WHERE title = '%s'" % (sqlString(elm['title'])))
+        elm['new'] = not cursor.fetchall()
+        if elm['new']:
+            noNew += 1
+        elms += 1
+        
+    print('team: '+ feedRow[1] + ' ' + feedRow[0] + '    ' + '\t' + str(noNew) + '/' + str(elms))        
+    return teamFeed
+
 def sqlString(stg):
     return stg.replace("'", "''")
 
@@ -149,10 +172,61 @@ def pushRecord(feeds, cursor, conn):
                 (elm['pubDate'], elm['team'], elm['title'], elm['type'], elm['link'], elm['discription'], elm['creator'], lastId))
     
     conn.commit()
+    print(str(pushedElms) + " new records intserted into team-articles")
+    
+    return lastId
+
+def pushRecord2(feeds, cursor, conn):
+    '''
+        Push all article records into team_articles Postgres table with auto id incrementer
+    '''
+    
+    lastId = 0   
+    pushedElms = 0
+    feed = 0
+    for elm in reversed(feeds):
+
+        feed += 1
+
+        if elm['new']:
+            pushedElms += 1
+            lastId += 1
+            cursor.execute(
+                "INSERT INTO team_articles (Date, Team, Title, Type, Link, Discription, Creator) VALUES (%s, %s, %s, %s, %s, %s, %s);",
+                (elm['pubDate'], elm['team'], elm['title'], elm['type'], elm['link'], elm['discription'], elm['creator']))
+    
+    conn.commit()
     print(str(pushedElms) + " new records intserted into nfl-team-articles")
     
     return lastId
 
+def pushCorpus(links):
+    '''
+        For each link 
+        1) extract article text
+        2) clean it
+        3) push the text the word count and the foreign key to news_corpus table
+    '''
+    
+    conn = config.connect()
+    cursor = conn.cursor()
+    pushedElms = 0
+    
+    for elm in links:
+        link = elm[1]
+        clean = cl.parseForCorpus(link)
+        cursor.execute(
+        "INSERT INTO news_corpus (article_text, word_count, article_id) VALUES (%s, %s, %s);",
+        (clean[0], clean[1], elm[0]))
+        pushedElms += 1
+     
+    conn.commit()
+    print(str(pushedElms) + " new records intserted into news_corpus")
+    
+    cursor.close()
+    conn.close()
+    
+    return pushedElms
 
 get_credentials = mgs.modelInit()
 conn = config.connect()
@@ -166,19 +240,19 @@ data = []
 for feedRow in feeds:
     if feedRow[3] == 'null':
         continue
-    data.extend(feedFrame(feedRow, cursor))
+    data.extend(feedFrame2(feedRow, cursor))
     #print('team: '+ feedRow[1] + ' ' + feedRow[0] )
 
 # Step 3 Sort the Data by pubData push to Postgress and DataFrame the result    
 dataSorts = sorted(data, key=lambda k: getTime(k['pubDate']), reverse=True)
-last = pushRecord(dataSorts, cursor, conn)
+last = pushRecord2(dataSorts, cursor, conn)
 
 cursor.close()
 conn.close()
 
 df = pd.DataFrame(dataSorts)
 
-# Final Step Write the Result to the NFL Feeds Speadsheet.
+# Step 4 Write the Result to the NFL Feeds Speadsheet.
 try:
     writeLinkData([sheetColumns(record) for record in dataSorts])
 except HttpError:
@@ -187,3 +261,6 @@ except HttpError:
     print('There were large discriptions in some of the cells which did cause some problems, upload completed with them removed from the table write')
 finally:
     print('Complete')
+
+# Step 5 Update Corpus Table with new news article Data
+cp.corpusNewArticles()   

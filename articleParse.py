@@ -28,7 +28,7 @@ class articleContentParser(HTMLParser):
         if tag == 'div':
             if ('class', 'article-content') in attrs:
                 self.articleContentDiv = True
-                print("ContentOn")
+               #print("ContentOn")
         
         if self.articleContentDiv and tag == 'div':
             self.divs += 1
@@ -48,7 +48,7 @@ class articleContentParser(HTMLParser):
             self.divs -= 1
             if self.divs == 0:
                 self.articleContentDiv = False
-                print("ContentOff")
+                #print("ContentOff")
                 
         if tag == 'script':
             self.script = False
@@ -86,7 +86,7 @@ class paneContentParser(HTMLParser):
         if tag == 'div':
             if ('class', 'pane-content') in attrs:
                 self.articleContentDiv = True
-                print("PaneOn")
+                #print("PaneOn")
         
         if self.articleContentDiv and tag == 'div':
             self.divs += 1
@@ -106,7 +106,7 @@ class paneContentParser(HTMLParser):
             self.divs -= 1
             if self.divs == 0:
                 self.articleContentDiv = False
-                print("PaneOff")
+                #print("PaneOff")
                 
         if tag == 'script':
             self.script = False
