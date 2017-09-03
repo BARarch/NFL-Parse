@@ -263,4 +263,6 @@ finally:
     print('Complete')
 
 # Step 5 Update Corpus Table with new news article Data
-cp.corpusNewArticles()   
+cp.corpusNewArticles()  
+
+ 
