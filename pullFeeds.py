@@ -118,8 +118,11 @@ def feedFrame(feedRow, cursor):
         if elm['new']:
             noNew += 1
         elms += 1
-        
-    print('team: '+ feedRow[1] + ' ' + feedRow[0] + '    ' + '\t' + str(noNew) + '/' + str(elms))        
+    
+    if noNew == elms:
+        print('team: '+ feedRow[1] + ' ' + feedRow[0] + '    ' + '\t' + str(noNew) + '/' + str(elms) + '\t' + "MAX")
+    else:    
+        print('team: '+ feedRow[1] + ' ' + feedRow[0] + '    ' + '\t' + str(noNew) + '/' + str(elms))        
     return teamFeed
 
 def feedFrame2(feedRow, cursor):
@@ -228,6 +231,9 @@ def pushCorpus(links):
     
     return pushedElms
 
+
+
+# Step 0 Initialize Models    
 get_credentials = mgs.modelInit()
 conn = config.connect()
 cursor = conn.cursor()
