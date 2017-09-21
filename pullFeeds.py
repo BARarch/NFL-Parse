@@ -144,7 +144,10 @@ def feedFrame2(feedRow, cursor):
             noNew += 1
         elms += 1
         
-    print('team: '+ feedRow[1] + ' ' + feedRow[0] + '    ' + '\t' + str(noNew) + '/' + str(elms))        
+    if (noNew == elms) & (elms != 0):
+        print('team: '+ feedRow[1] + ' ' + feedRow[0] + '    ' + '\t' + str(noNew) + '/' + str(elms) + '\t' + "MAX")
+    else:    
+        print('team: '+ feedRow[1] + ' ' + feedRow[0] + '    ' + '\t' + str(noNew) + '/' + str(elms))        
     return teamFeed
 
 def sqlString(stg):
