@@ -145,7 +145,7 @@ def feedFrame2(feedRow, cursor):
         elms += 1
         
     if (noNew == elms) & (elms != 0):
-        print('team: '+ feedRow[1] + ' ' + feedRow[0] + '    ' + '\t' + str(noNew) + '/' + str(elms) + '\t' + "MAX")
+        print('team: '+ feedRow[1] + ' ' + feedRow[0] + '    ' + '\t' + str(noNew) + '/' + str(elms) + '\t' + "MAX" + '\t' + feedRow[2])
     else:    
         print('team: '+ feedRow[1] + ' ' + feedRow[0] + '    ' + '\t' + str(noNew) + '/' + str(elms))        
     return teamFeed
