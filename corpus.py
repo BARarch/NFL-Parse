@@ -71,15 +71,18 @@ def corpusNewArticles():
     
     return pushCorpus(newsLinks)
 
-def corpusSize():
+def dbSize():
     conn = config.connect()
     cursor = conn.cursor()
 
     cursor.execute(" SELECT pg_size_pretty( pg_database_size('nflparse'))")
-    size = cursor.fetchall()
+    dbsize = cursor.fetchall()[0][0]
+
+    cursor.execute(" SELECT pg_size_pretty( pg_total_relation_size('news_corpus'))")
+    corpusSize = cursor.fetchall()[0][0]
 
     cursor.close()
     conn.close()
 
-    return size
+    return dbsize, corpusSize
     

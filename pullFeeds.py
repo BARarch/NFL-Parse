@@ -272,8 +272,11 @@ finally:
     print('Complete')
 
 # Step 5 Update Corpus Table with new news article Data
-cp.corpusNewArticles()  
+cp.corpusNewArticles() 
 
-print ("Collection Size:" + '\t' + cp.corpusSize()[0][0])
+size = cp.dbSize() 
+
+print ("Collection Size:" + '\t' + size[0])
+print ("Team Corpus:" + '\t' + '\t'+ size[1])
 
  
