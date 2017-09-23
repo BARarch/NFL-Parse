@@ -274,4 +274,6 @@ finally:
 # Step 5 Update Corpus Table with new news article Data
 cp.corpusNewArticles()  
 
+print ("Collection Size:" + '\t' + cp.corpusSize()[0][0])
+
  

@@ -70,4 +70,16 @@ def corpusNewArticles():
     conn.close()
     
     return pushCorpus(newsLinks)
+
+def corpusSize():
+    conn = config.connect()
+    cursor = conn.cursor()
+
+    cursor.execute(" SELECT pg_size_pretty( pg_database_size('nflparse'))")
+    size = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return size
     
