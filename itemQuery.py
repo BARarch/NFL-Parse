@@ -22,7 +22,11 @@ def recordsFromFeed(teamNewsFeedLink):
     session.mount('http://', requests.adapters.HTTPAdapter(max_retries=3))
     raw_data = session.get(api_url)
     xml_data = raw_data.text
+    #try:
     root = ET.fromstring(xml_data)
+    #except ET.ParseError:
+        #print("There is a Parse Error Here")
+        #return ['','','','null','']
     return getFeedRecords(root)
 
 def teamNews(teamNewsFeedLink):
